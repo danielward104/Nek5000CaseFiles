@@ -1,15 +1,9 @@
 # Runs Nek5000 simulation.
 
-# The only bits you need to change.  The variable 'simulation_name' should be the same as all the files (.rea, .usr, .box) and 'num_cores' is the number of cores on which to run the simulation.  Finally, 'mesh_tolerance' is as expected, a recommended value is 0.2.
+# The only bits you need to change.  The variable 'simulation_name' should be the same as all the files (.par, .usr, .box) and 'num_cores' is the number of cores on which to run the simulation.  Finally, 'mesh_tolerance' is as expected, a recommended value is 0.2.
 simulation_name=plume
 num_cores=6
 mesh_tolerance=0.2
-
-# Re-compiles genbox.
-
-rm ../../bin/genbox
-cd ../../tools; ./maketools genbox
-cd ../run/$simulation_name
 
 # Pipes the simulation into genbox to build the mesh.
 echo $simulation_name.box | genbox
