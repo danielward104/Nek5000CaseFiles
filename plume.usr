@@ -1,0 +1,139 @@
+c-----------------------------------------------------------------------
+c-----------------------------------------------------------------------
+
+c-----------------------------------------------------------------------
+c This function can be used to specify customized or solution dependent material properties.
+c-----------------------------------------------------------------------
+      subroutine uservp (ix,iy,iz,eg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+      integer e,f,eg
+c      e = gllel(eg)
+
+      udiff =0
+      utrans=0
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+c This function sets the source term (which will be subsequently be multiplied by the density) for the momentum equation.
+c-----------------------------------------------------------------------
+      subroutine userf  (ix,iy,iz,iel)
+      include 'SIZE'
+      include 'TSTEP'
+      include 'NEKUSE'
+
+      integer e,f,eg
+
+      Fr = 1.0
+
+      ffx = 0.0
+      ffy = (1/Fr)*temp
+      ffz = 0.0
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+c This functions sets the source term for the scalar equation.
+c-----------------------------------------------------------------------
+      subroutine userq  (ix,iy,iz,iel)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+      qvol   = 0.0
+      source = 0.0
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+c This is a general purpose function that gets executed before the time stepper and after every time step.
+c-----------------------------------------------------------------------
+      subroutine userchk
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+c This function sets boundary conditions. Note, this function is only called for special boundary condition types and only for points on the boundary surface.
+c-----------------------------------------------------------------------
+      subroutine userbc (ix,iy,iz,iside,ieg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+      common /cmygeom/ rad_mid
+
+      ux=0.0
+      uy=0.0
+      uz=0.0
+      temp=0.0
+
+      gridSize = 100
+      centre = gridSize/2
+
+      maxtemp = 1
+      coeff = 1
+
+      if(y.lt.gridSize/2)then
+	temp = maxtemp*EXP(-(0.5*coeff*(x - centre)**2))
+      endif
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+c This function sets initial conditions.
+c-----------------------------------------------------------------------
+      subroutine useric (ix,iy,iz,ieg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+      ux=0.0
+      uy=0.0
+      uz=0.0
+      temp=0.0
+
+      gridSize = 100
+      centre = gridSize/2
+
+      maxtemp = 1
+      coeff = 1
+      stand_dev_y = 0.01
+
+      temp_prox = maxtemp*EXP(-(0.5*coeff*(x - centre)**2))
+      temp = temp_prox*EXP(-(y**2)/(2*stand_dev_y**2))
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+c This function can be used to modify the element vertices.
+c-----------------------------------------------------------------------
+      subroutine usrdat
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+c This function can be used to modify the spectral element mesh.
+c-----------------------------------------------------------------------
+      subroutine usrdat2
+
+      return
+      end
+
+c-----------------------------------------------------------------------
+c This function can be used to initialize case/user specific data.
+c-----------------------------------------------------------------------
+      subroutine usrdat3
+
+      return
+      end
+
+c-----------------------------------------------------------------------

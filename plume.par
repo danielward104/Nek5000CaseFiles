@@ -1,0 +1,31 @@
+[GENERAL]
+stopAt = numSteps			# Stop mode (numSteps or runTime)
+#endTime = 1000 			# Final physical time at which simulation will stop
+numsteps = 1000000			# Number of time steps at which simulation will stop
+dt = 1e-3				# Maximum time step
+variableDT = yes			# Controls if step size will be adjusted to match targetCFL
+targetCFL = 0.5				# Sets target CFL number
+writeControl = timeStep			# Checkpointing based on number of time steps (timeStep) or physical time (runTime)
+writeInterval = 50			# Checkpoint frequency in time steps or physical time
+
+
+[PROBLEMTYPE]
+equation = incompNS			# Specifies equation type
+
+
+[PRESSURE]
+residualtol = 1e-08			# Residual tolerance used by solver
+residualproj = no			# Controls the residual projection
+
+
+[VELOCITY]
+residualtol = 1e-08			# Residual tolerance used by solver
+residualproj = no
+density = 1.0				# Density
+viscosity = -1000.0			# Negative value gives Reynolds number
+
+
+[TEMPERATURE]
+residualTol = 1e-08			# Residual tolerance used by solver
+rhoCp = 1.0				# Product of density and heat capacity
+conductivity = -1000.0			# Negative value gives Peclet number
