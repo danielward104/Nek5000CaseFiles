@@ -1,0 +1,11 @@
+rm fort.12  
+rm h1.dra
+rm pretex.jou  
+rm session.name
+rm tmp.date
+rm h1.rea
+rm h2.rea
+rm h3.dra
+rm h3.rea
+rm k1.rea
+rm p2.rea

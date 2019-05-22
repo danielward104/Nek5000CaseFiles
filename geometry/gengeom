@@ -1,0 +1,87 @@
+#--------------------------------------------------------------------------------------------------------
+# Converts an empty mesh (one2d) into a circular 2d domain (h1).  "Enter number of elements in core and shell:" chooses how many elements in the centre in a square like mesh, and then around the edge in a circular type mesh.
+#--------------------------------------------------------------------------------------------------------
+pretex << EOF
+h1
+   1 READ PREVIOUS PARAMETERS
+one2d
+   1 BUILD FROM FILE
+one2d
+   5 DELETE ELEMENT
+   4 CURVE SIDES
+   5 Autosphere
+2 2 Enter number of elements in core and shell:
+0.6 Enter ratio in outer shell:
+   1 BUILD MENU
+   3 GLOBAL REFINE
+   7 REPLICATE/ROTATE
+3  Rep. (1), Rot. (2), Rep/Rot (3) Template (4)? (0=abort)
+90 Input rotation angle (deg):
+3  Input number of reps (e.g., 1 --> double mesh size)
+   11 STRETCH (Mesh starts from -0.5 to 0.5)
+   5 STRETCH R
+0.1 Multiplication factor of mesh
+   1 UP MENU
+   1 END GLOBAL REFINE
+   1 END    ELEMENTS
+   1 ACCEPT MATL,QVOL
+   1 ACCEPT B.C.'s
+   1 ACCEPT B.C.'s
+   1 EXIT
+EOF
+#--------------------------------------------------------------------------------------------------------
+# Prepares .rea file for outer annulus.
+#--------------------------------------------------------------------------------------------------------
+genbox << EOF
+h2.box
+EOF
+mv box.rea h2.rea
+#--------------------------------------------------------------------------------------------------------
+# Adds inner circle and outer annulus together.
+#-------------------------------------------------------------------------------------------------------
+pretex << EOF
+h3
+   1 READ PREVIOUS PARAMETERS
+h2
+   1 BUILD FROM FILE
+h2
+   10 import
+h1
+n
+   1 END    ELEMENTS
+   1 Set bcs
+   1 ACCEPT B.C.'s
+   1 ACCEPT B.C.'s
+   1 set bcs
+   1 EXIT
+EOF
+#--------------------------------------------------------------------------------------------------------
+# Extrudes mesh into 3D.
+#--------------------------------------------------------------------------------------------------------
+n2to3 << EOF
+h3
+p2
+0    ascii
+10    number of levels
+0    z_min
+6    z_max
+0    uniform (1), custom (0)
+./generate_spacings/box_z.txt
+no   CEM
+v  
+O  
+t  
+O  
+EOF
+
+#--------------------------------------------------------------------------------------------------------
+# Converts .rea to .re2.
+#--------------------------------------------------------------------------------------------------------
+reatore2 << EOF
+p2
+k1
+EOF
+#--------------------------------------------------------------------------------------------------------
+# Removes unnecessary intermediate files.
+#--------------------------------------------------------------------------------------------------------
+#./remove.sh

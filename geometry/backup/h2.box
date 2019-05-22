@@ -1,0 +1,13 @@
+h1.rea
+2		spatial dimension
+2		number of fields
+#
+#========================================================
+#
+C		define cylindrical mesh
+0. 0.		centre of circle (?)
+-10 -16
+0.05 2.0 1.1
+0 360 1
+E  ,O
+E  ,O
