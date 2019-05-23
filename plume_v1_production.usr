@@ -3,6 +3,9 @@ c-----------------------------------------------------------------------
 c Problem dependent constants:
 #define lpart 100000
 
+c Set runParticles to 1 if running with particles
+#define runParticles 0
+
 c-----------------------------------------------------------------------
 c Used to specify customized or solution dependent material properties.
 c-----------------------------------------------------------------------
@@ -11,8 +14,29 @@ c-----------------------------------------------------------------------
       include 'TOTAL'
       include 'NEKUSE'
 
-      udiff =0.
-      utrans=0.
+      real renum, responge
+
+      real rmin,rmax,zmin,zmax
+      common /domsizes/ rmin,rmax,zmin,zmax
+
+      renum = 5000
+      responge = 10
+
+      udiff =1.0/renum
+      utrans=1.0
+
+c.....Sponge at the top of the domain
+
+      scoefr_z = 10/(zmax-zmin)
+      scoefr_r = 20/(rmax-rmin)
+      zloc=zmax
+      rloc=rmax
+    
+      r = (x**2 + y**2)**0.5
+
+      udiff = 1./renum
+     $       +(1./responge)*(1.+derf(scoefr_z*(z - zloc)))
+     $       +(1./responge)*(1.+derf(scoefr_r*(r - rloc)))
 
       return
       end
@@ -60,16 +84,19 @@ c-----------------------------------------------------------------------
       common /iparts/ npart,partid(lpart)
       integer partid
 
+      real rmin,rmax,zmin,zmax
+      common /domsizes/ rmin,rmax,zmin,zmax
+
       real domht,theta_in
       integer i,n
 
 c.....parameters
 
       pi = 3.14159
-      R0 = 0.060
+      R0 = 0.050
       W0 = 5.051
 
-      domht = 8.0
+      domht = zmax
       theta_in = (1/pi)*(1/(W0*R0**2))
 
       n = nx1*ny1*nz1*nelt
@@ -90,6 +117,8 @@ c.....clip the temperature
 
       end do
 
+      if (runParticles.eq.1) then
+
 c     NOTE:  The following outpost call coordinates the .f0000 numbering
 c            with the particle file numbering.
 c
@@ -100,7 +129,7 @@ c            This coordination is important when synching frames for a movie.
 
       ifxyo = .true.
       if (istep.gt.iostep) ifxyo = .false.
-      if (istep.eq.0) call outpost(vx,vy,vz,pr,t,'   ') ! Part. coordination
+      if (istep.eq.0) call outpost(vx,vy,vz,pr,t,s,'   ') ! Part. coordination
       call my_particle_generator(ipstep)                ! Particle injection
 
       n=nx1*ny1*nz1*nelt
@@ -111,6 +140,8 @@ c            This coordination is important when synching frames for a movie.
       wmax = glmax(vz,n)
       if (nid.eq.0) write(6,1) istep,time,umax,vmax,wmin,wmax
     1 format(i9,1p5e12.4,' wmax')
+
+      endif
 
       return
       end
@@ -139,7 +170,7 @@ c.....Constants
       centre = 0.0
 
 c.....Source Parameters
-      R0 = 0.060
+      R0 = 0.050
       W0 = 5.051 
       T0 = (1/pi)*(1/(W0*R0**2))
 
@@ -291,6 +322,9 @@ c     Lagrangian particle advection
       data x_save/ ldim * 0.0/
       integer count
 
+      real rmin,rmax,zmin,zmax
+      common /domsizes/ rmin,rmax,zmin,zmax
+
       common /scruz/ u1(ldim,lpart)
 
       common /padvc/ xmx(3,0:2)
@@ -334,8 +368,6 @@ c.....Coefficients for Adams-Bashforth scheme.
 
       settling_velocity = 1.0
 
-      limits = (/-1.0, 1.0, -1.0, 1.0, 0.0, 2.0/)
-
       do i=1,npart
           do k=1,ndim
 C...........Update particle position and history.
@@ -356,9 +388,9 @@ C...........Update particle and fluid velocity history.
 c.....Remove and save particles that leave the domain.
       do i=1,npart
         j = npart - i + 1
-        if (  x(1,j).lt.limits(1) .or. x(1,j).gt.limits(2) .or.
-     &        x(2,j).lt.limits(3) .or. x(2,j).gt.limits(4) .or.
-     &        x(3,j).lt.limits(5) .or. x(3,j).gt.limits(6) ) then
+        radial = (x(1,j)**2 + x(2,j)**2)**0.5
+        if (  radial.lt.rmin .or. radial.gt.rmax .or.
+     &        x(3,j).lt.zmin .or. x(3,j).gt.zmax ) then
           do k = 1,ndim
             x_save(k) = x(k,j)
             x(k,j:npart-1) = x(k,j+1:npart)
@@ -508,7 +540,7 @@ c
       zp = 0.2
       do ipart = 1,nw  ! nw points on a wire
 
-       xp = 0.8 + dx*(ipart-1)*(-1)**ipart
+       xp = 0.0 + dx*(ipart-1)*(-1)**ipart
 
        if (mod(k,np).eq.nid) then ! Inject particle _only_ on this processor
           l=l+1  ! local count

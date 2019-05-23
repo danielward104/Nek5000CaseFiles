@@ -24,7 +24,7 @@
    4.00000     p020 NORDER
   0.100000E-05 p021 DIVERGENCE
   0.100000E-05 p022 HELMHOLTZ
-   0.00000     p023 NPSCAL
+   1.00000     p023 NPSCAL
   0.100000E-01 p024 TOLREL
   0.100000E-01 p025 TOLABS
   0.600000     p026 COURANT/NTAU
@@ -152,7 +152,7 @@
    1.00000       1.00000       1.00000       1.00000
    1.00000       1.00000       1.00000       1.00000       1.00000
    1.00000       1.00000       1.00000       1.00000
-           13  LOGICAL SWITCHES FOLLOW
+           14  LOGICAL SWITCHES FOLLOW
  T      IFFLOW
  T      IFHEAT
  T      IFTRAN
@@ -166,6 +166,7 @@
  F      IFKEPS
  F      IFMVBD
  F      IFCHAR
+ T      IFUSERVP
    8.00000       8.00000     -4.000000      -4.00000     XFAC,YFAC,XZERO,YZERO
  **MESH DATA** 1st line is X of corner 1,2,3,4. 2nd line is Y.
      1     2     1           NEL,NDIM,NELV
