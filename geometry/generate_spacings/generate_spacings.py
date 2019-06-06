@@ -11,10 +11,10 @@ cluster_x = 0.6      # Amount to cluster elements (geometric ratio).
 order = 9               # Order of the simulation.
 
 domain_start_y = 0        # Start of domain.
-domain_end_y = 0.5        # End of domain.
-Nel_y = 10                # Number of elements.
+domain_end_y = 8        # End of domain.
+Nel_y = 30                # Number of elements.
 N_y = 1                   # Number of clusters.
-cluster_y = 1/0.82      # Amount to cluster elements (geometric ratio).
+cluster_y = 1/0.9      # Amount to cluster elements (geometric ratio).
 
 
 def writeMesh( domain_start, domain_end, Nel, N, cluster, order, save_name ):

@@ -1,8 +1,7 @@
-rm fort.12  
+rm fort.* 
 rm h1.dra
 rm pretex.jou  
 rm session.name
-rm tmp.date
 rm h1.rea
 rm h2.rea
 rm h3.dra

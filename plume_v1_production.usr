@@ -4,7 +4,7 @@ c Problem dependent constants:
 #define lpart 100000
 
 c Set runParticles to 1 if running with particles
-#define runParticles 0
+#define runParticles 1
 
 c-----------------------------------------------------------------------
 c Used to specify customized or solution dependent material properties.
@@ -19,7 +19,12 @@ c-----------------------------------------------------------------------
       real rmin,rmax,zmin,zmax
       common /domsizes/ rmin,rmax,zmin,zmax
 
-      renum = 5000
+      rmin = 0.0
+      rmax = 2.0
+      zmin = 0.0
+      zmax = 8.0
+
+      renum = 1000
       responge = 10
 
       udiff =1.0/renum
@@ -31,12 +36,13 @@ c.....Sponge at the top of the domain
       scoefr_r = 20/(rmax-rmin)
       zloc=zmax
       rloc=rmax
-    
-      r = (x**2 + y**2)**0.5
+
+      radial = (x**2 + y**2)**0.5
 
       udiff = 1./renum
      $       +(1./responge)*(1.+derf(scoefr_z*(z - zloc)))
-     $       +(1./responge)*(1.+derf(scoefr_r*(r - rloc)))
+     $       +(1./responge)*(1.+derf(scoefr_r*(radial - rloc)))
+
 
       return
       end
@@ -90,6 +96,11 @@ c-----------------------------------------------------------------------
       real domht,theta_in
       integer i,n
 
+      rmin = 0.0
+      rmax = 2.0
+      zmin = 0.0
+      zmax = 8.0
+
 c.....parameters
 
       pi = 3.14159
@@ -97,7 +108,8 @@ c.....parameters
       W0 = 5.051
 
       domht = zmax
-      theta_in = (1/pi)*(1/(W0*R0**2))
+      disturb_max = (1 - 0.5)*0.2
+      theta_in = (1/pi)*(1/(W0*R0**2)) + disturb_max
 
       n = nx1*ny1*nz1*nelt
 
@@ -112,7 +124,7 @@ c.....clip the temperature
 	endif
 
 	if(t(i,1,1,1,1)+aux.gt.max(domht,theta_in))then
-	  t(i,1,1,1,1) = max(domht,theta_in) - aux
+          t(i,1,1,1,1) = max(domht,theta_in) - aux
 	end if
 
       end do
@@ -129,7 +141,10 @@ c            This coordination is important when synching frames for a movie.
 
       ifxyo = .true.
       if (istep.gt.iostep) ifxyo = .false.
-      if (istep.eq.0) call outpost(vx,vy,vz,pr,t,s,'   ') ! Part. coordination
+      if (istep.eq.0) then 
+        call outpost(vx,vy,vz,pr,t,'in_') ! Part. coordination
+      endif
+
       call my_particle_generator(ipstep)                ! Particle injection
 
       n=nx1*ny1*nz1*nelt
@@ -168,26 +183,31 @@ c.....Set passive scalar to zero at boundaries
 c.....Constants
       pi = 3.14159
       centre = 0.0
+      pwr = 12.0
 
 c.....Source Parameters
-      R0 = 0.050
+      R0 = 0.05
       W0 = 5.051 
       T0 = (1/pi)*(1/(W0*R0**2))
 
 c.....Floor boundary condition
       if ( z.eq.0 ) then
         circle = x**2 + y**2
-        radius = 0.05**2
+        radius = R0**2
         if ( circle.lt.radius ) then
 
+c.........(if changing disturb, also change disturb_max in usrchk)
           call random_number(noise)
           disturb = (noise - 0.5)*0.2
 
-          temp = T0 + disturb*T0
-          uz = W0 + disturb*W0
+          temp = (T0 + disturb*T0) * (-(circle/radius)**pwr + 1)
+          uz = (W0 + disturb*W0) * (-(circle/radius)**pwr + 1)
+
+c          temp = T0 + disturb*T0
+c          uz = W0 + disturb*W0
 
           if(ifield.eq.3)then
-            temp = 1
+            temp = 1.0 * (-(circle/radius)**pwr + 1)
 c            temp = EXP(-0.5*(x_cond + y_cond))
           endif
 
@@ -264,7 +284,6 @@ c
       common /iwk_intp/
      $       iwk(nmax,3)
 
-
       integer icalld,e
       save    icalld
       data    icalld /0/
@@ -307,19 +326,18 @@ c
       return
       end
 c-----------------------------------------------------------------------
-      subroutine particle_advect_std(x,vh,partv,npart)
+      subroutine particle_advect_std(x,vh,partv,npart,sv)
 
 c     Lagrangian particle advection
 
       include 'SIZE'
       include 'TOTAL'
 
-      real limits(6)
       logical exist
 
-      real x(ldim,lpart),vh(ldim,2:3,lpart),partv(lpart)
-      real x_save(ldim)
-      data x_save/ ldim * 0.0/
+      real x(ldim,lpart),vh(ldim,2:3,lpart),partv(lpart),sv(lpart)
+      real x_save(ldim+1)
+      data x_save/ 4 * 0.0/     ! This is set to 4 cause I cbb to find a way to write ldim+1
       integer count
 
       real rmin,rmax,zmin,zmax
@@ -328,6 +346,11 @@ c     Lagrangian particle advection
       common /scruz/ u1(ldim,lpart)
 
       common /padvc/ xmx(3,0:2)
+
+      rmin = 0.0
+      rmax = 2.0
+      zmin = 0.0
+      zmax = 8.0
 
 c.....Initialises file to write saved particles to.
       if (istep.eq.0) then
@@ -366,20 +389,20 @@ c.....Coefficients for Adams-Bashforth scheme.
 
       call interp_v(u1,x,npart)
 
-      settling_velocity = 1.0
+c      settling_velocity = 1.0
 
       do i=1,npart
           do k=1,ndim
-C...........Update particle position and history.
+c...........Update particle position and history.
             x(k,i) = x(k,i)
      $              + dt*(c1*u1(k,i) + c2*vh(k,2,i) + c3*vh(k,3,i))
 
 c...........Apply settling velocity to 3rd dimension only.
             if (k.eq.3) then
-              x(k,i) = x(k,i) - dt*settling_velocity
+              x(k,i) = x(k,i) - dt*sv(i)
             endif
 
-C...........Update particle and fluid velocity history.
+c...........Update particle and fluid velocity history.
             vh(k,3,i) = vh(k,2,i)
             vh(k,2,i) = u1(k,i)
           enddo
@@ -396,12 +419,14 @@ c.....Remove and save particles that leave the domain.
             x(k,j:npart-1) = x(k,j+1:npart)
             vh(k,2:3,j:npart-1) = vh(k,2:3,j+1:npart)
             u1(k,j:npart-1) = u1(k,j+1:npart)
+            sv(j:npart-1) = sv(j+1:npart)
           enddo
+          x_save(4) = sv(j)
 
           open(unit=73,file="part_left.3D",
      $      status="old", access="append")
           write(73,3) x_save
- 3        format(3f6.3)
+ 3        format(4f6.3)
           close(73)
 
         endif
@@ -410,11 +435,11 @@ c.....Remove and save particles that leave the domain.
       return
       end
 c----------------------------------------------------------------------
-      subroutine particle_out (x,partid,partv,npart,ipstep)
+      subroutine particle_out (x,partid,partv,npart,ipstep,sv)
       include 'SIZE'
       include 'TOTAL'
 
-      real x(ldim,lpart),partv(lpart)
+      real x(ldim,lpart),partv(lpart),sv(lpart)
       integer partid(lpart)
 
       common /scrns/ x_tmp(ldim+1,lpart),work(ldim+1,lpart)
@@ -454,7 +479,7 @@ c----------------------------------------------------------------------
           if (i0.lt.partid(ii).and.partid(ii).le.i1) then
             i = partid(ii)-i0
             call copy(x_tmp(1,i),x(1,ii),ldim)  ! Coordinates
-            x_tmp(ldim+1,i) = partv(ii)         ! Store value here
+            x_tmp(ldim+1,i) = sv(ii)           ! changed from "= partv(ii)"         ! Store value here
           endif
         enddo
 
@@ -474,7 +499,7 @@ C-----------------------------------------------------------------------
       include 'TOTAL'
       include 'mpif.h'
 
-      common /rparts/ pts(ldim,lpart),vel(ldim,2:3,lpart)
+      common /rparts/ pts(ldim,lpart),vel(ldim,2:3,lpart),sv(lpart)
       common /rparts/ partv(lpart)
       common /iparts/ npart,partid(lpart)
       integer partid
@@ -485,9 +510,9 @@ C-----------------------------------------------------------------------
 
       ptime0 = dnekclock_sync()
 
-      call particle_init       (pts,partid,partv,npart,ipstep)
-      call particle_advect_std (pts,vel,partv,npart)
-      call particle_out        (pts,partid,partv,npart,ipstep)
+      call particle_init       (pts,partid,partv,npart,ipstep,sv)
+      call particle_advect_std (pts,vel,partv,npart,sv)
+      call particle_out        (pts,partid,partv,npart,ipstep,sv)
 
       ptime1 = dnekclock_sync() ! Track computational cost of particles
 
@@ -508,15 +533,18 @@ C-----------------------------------------------------------------------
       return
       end
 c-----------------------------------------------------------------------
-      subroutine particle_init(x,partid,partv,npart,ipstep)
+      subroutine particle_init(x,partid,partv,npart,ipstep,sv)
 c
 c     This version does continuous injection and overwrites old entries
 c
       include 'SIZE'
       include 'TOTAL'
 
-      real x(ldim,lpart),partv(lpart)
+      real x(ldim,lpart),partv(lpart),sv(lpart)
       integer partid(lpart)
+
+      real settling_velocities(numSV)
+      data settling_velocities /0.51,1.01,1.51,2.01/
 
       integer lcount,icount
       save    lcount,icount
@@ -534,24 +562,30 @@ c
       k  = icount       ! icount = total # particles emitted
       l  = lcount       ! Index into local particle array
 
-      nw = 4
+      do i = 1,numSV
 
-      yp = 0.0
-      zp = 0.2
-      do ipart = 1,nw  ! nw points on a wire
+        nw = 4
 
-       xp = 0.0 + dx*(ipart-1)*(-1)**ipart
+        yp = 0.0
+        zp = 0.1
+        do ipart = 1,nw  ! nw points on a wire
 
-       if (mod(k,np).eq.nid) then ! Inject particle _only_ on this processor
-          l=l+1  ! local count
-          x(1,l) = xp
-          x(2,l) = yp
-          x(3,l) = zp
-          partid(l) = k+1
-       endif
+          xp = 0.0 + dx*(ipart-1)*(-1)**ipart
 
-       k = k+1     ! Total count
+          settling_velocity = 0.5*ipart + 0.01
 
+          if (mod(k,np).eq.nid) then ! Inject particle _only_ on this processor
+            l=l+1  ! local count
+            x(1,l) = xp
+            x(2,l) = yp
+            x(3,l) = zp
+            sv(l) = settling_velocities(i)
+            partid(l) = k+1
+          endif
+
+          k = k+1     ! Total count
+
+        enddo
       enddo
 
       k0= k0+1    ! Count for this release (for coloring only)

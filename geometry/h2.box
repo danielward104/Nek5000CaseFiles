@@ -6,8 +6,8 @@ h1.rea
 #
 C		define cylindrical mesh
 0. 0.		centre of circle (?)
--2 -16
-0.05 0.2 1.1
+-6 -16
+0.05 2.0 1.4
 0 360 1
 E  ,O
 E  ,O

@@ -4,7 +4,7 @@ module add mpi/openmpi-x86_64
 
 # Adds to path.
 
-export PATH=/home/617122/Nek5000/bin:$PATH
+export PATH=/home/cserv1_a/soc_pg/scdrw/Documents/nbudocuments/PhD/Nek5000/bin:$PATH
 
 # Re-compiles genbox.
 

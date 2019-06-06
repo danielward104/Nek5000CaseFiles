@@ -1,0 +1,43 @@
+[GENERAL]
+stopAt = numSteps                       # Stop mode (numSteps or runTime)
+#endTime = 1000                         # Final physical time at which simulation will stop
+numsteps = 1e8                          # Number of time steps at which simulation will stop
+dt = 1e-3                               # Maximum time step
+variableDT = yes                        # Controls if step size will be adjusted to match targetCFL
+targetCFL = 0.5                         # Sets target CFL number
+writeControl = timeStep                 # Checkpointing based on number of time steps (timeStep) or 
+                                        # physical time (runTime)
+writeInterval = 4                       # Checkpoint frequency in time steps or physical time
+timeStepper = BDF2                      # Time integration order
+
+filtering = hpfrt                       # Set to none in case of Smagorinsky
+filterWeight = 10
+filterCutoffRatio = 0.9
+
+startFrom = ./dataFiles/plume_v1_production0.f02126
+
+[PROBLEMTYPE]
+variableProperties = yes                 # Set to yes in case of Smagorinsky
+equation = incompNS                     # Specifies equation type
+
+[PRESSURE]
+preconditioner = semg_xxt               # Preconditioning method
+residualTol = 1e-08                     # Residual tolerance used by solver
+residualproj = no                       # Controls the residual projection
+
+[VELOCITY]
+density = 1.0                           # Density
+viscosity = -2000.0                      # Negative value gives Reynolds number
+residualTol = 1e-08                     # Residual tolerance used by solver
+residualproj = no                       # Controls the residual projection
+
+[TEMPERATURE]
+residualTol = 1e-08                     # Residual tolerance used by solver
+rhoCp = 1.0                             # Product of density and heat capacity
+conductivity = -2000.0                   # Negative value gives Peclet number
+advection = yes                         # Controls if advection is present
+
+[SCALAR01]
+residualTol = 1e-08
+density = 2000.0			# This should be the same as -conductivity in [TEMPERATURE]
+diffusivity = 1.0
